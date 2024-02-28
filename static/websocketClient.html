@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client with Vue and Tailwind CSS</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Vue.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+</head>
+<body>
+    <div id="app" class="container mx-auto px-4 py-4">
+        <div class="chat-container flex items-center justify-center p-4 border border-lightcoral">
+            <input v-model="input" type="text" class="flex-1 border border-blue-500 p-2" />
+            <button @click="send" class="border border-grey-dark bg-blue-500 text-white p-2 flex-none">Send</button>
+        </div>
+        
+        <div class="output-container mt-4 p-4 border border-lightcoral">
+            <pre>{{ output }}</pre>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    input: '',
+                    output: '',
+                    socket: null,
+                    userID: '12345', // This should be dynamically assigned in real applications
+                };
+            },
+            mounted() {
+                this.connectWebSocket();
+            },
+            methods: {
+                connectWebSocket() {
+                    this.socket = new WebSocket(`ws://${window.location.host}/ws?userID=${this.userID}`);
+
+                    this.socket.onopen = () => {
+                        this.output += "Status: Connected\n";
+                    };
+
+                    this.socket.onmessage = (e) => {
+                        this.output += "Server: " + e.data + "\n";
+                    };
+
+                    this.socket.onclose = () => {
+                        this.output += "Connection lost, attempting to reconnect...\n";
+                        // Try reconnecting after a 5 second delay
+                        setTimeout(this.connectWebSocket, 5000);
+                    };
+
+                    this.socket.onerror = (error) => {
+                        console.error('WebSocket Error:', error);
+                    };
+                },
+                send() {
+                    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                        this.socket.send(this.input);
+                        this.input = '';
+                    } else {
+                        alert("Connection is not open.");
+                        // Optionally try to reconnect here as well
+                        this.connectWebSocket();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+version: "3.8"
+
+name: dev
+
+services:
+  ws:
+    image: ws:dev
+    container_name: ws
+    command: ["air", "-c", ".air.toml"]
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile
+      target: development
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_ID=1111
+      - APP_URL=0.0.0.0:8080
+      - REDIS_ADDR=rds:6379
+      - REDIS_PASSOWRD=5qHEy66UmuTf4rUuc4hMG7rb
+    volumes:
+      - ../:/usr/src/app
+
+  rds:
+    image: "bitnami/redis:6.2"
+    container_name: rds
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=5qHEy66UmuTf4rUuc4hMG7rb
+    volumes:
+      - ../tmp/redis:/bitnami/redis/data

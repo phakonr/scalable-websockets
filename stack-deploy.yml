@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: "traefik:v2.5"
+    hostname: traefik
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--providers.docker.watch=true"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  ws:
+    image: ws:prod
+    hostname: "ws-{{.Task.Slot}}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ws.rule=PathPrefix(`/ws`)"
+      - "traefik.http.routers.ws.service=ws-svc"
+      - "traefik.http.services.ws-svc.loadbalancer.server.port=8080"
+      - "traefik.http.routers.ws.entrypoints=web"
+      - "traefik.http.routers.static.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.static.service=static-svc"
+      - "traefik.http.services.static-svc.loadbalancer.server.port=8080"
+      - "traefik.http.routers.static.entrypoints=web"
+      - "traefik.http.services.ws-svc.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.ws-svc.loadbalancer.sticky.cookie.name=stickyws"
+    environment:
+      - APP_ID={{.Task.Slot}}
+      - APP_PORT=8080
+      - REDIS_ADDR=rds:6379
+      - REDIS_PASSWORD=5qHEy66UmuTf4rUuc4hMG7rb
+    depends_on:
+      - traefik
+      - rds
+
+  rds:
+    image: "bitnami/redis:6.2"
+    hostname: rds
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=5qHEy66UmuTf4rUuc4hMG7rb
+
+networks:
+  default:
+    driver: overlay
